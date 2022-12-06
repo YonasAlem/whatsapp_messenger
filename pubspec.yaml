@@ -48,6 +48,8 @@ dependencies:
   flutter_contacts: ^1.1.5+1
   url_launcher: ^6.1.7
   firebase_database: ^10.0.6
+  page_transition: ^2.0.9
+  cached_network_image: ^3.2.3
 
 flutter_native_splash:
   color: "#FFFFFF"
