@@ -17,6 +17,7 @@ class CustomThemeExtension extends ThemeExtension<CustomThemeExtension> {
   final Color? photoIconBgColor;
   final Color? photoIconColor;
   final Color? profilePageBg;
+  final Color? chatTextFieldBg;
 
   const CustomThemeExtension({
     this.circleImageColor,
@@ -28,6 +29,7 @@ class CustomThemeExtension extends ThemeExtension<CustomThemeExtension> {
     this.photoIconBgColor,
     this.photoIconColor,
     this.profilePageBg,
+    this.chatTextFieldBg,
   });
 
   static const lightMode = CustomThemeExtension(
@@ -37,9 +39,10 @@ class CustomThemeExtension extends ThemeExtension<CustomThemeExtension> {
     langBgColor: Color(0xFFF7F8FA),
     langHightlightColor: Color(0xFFE8E8ED),
     authAppbarTextColor: Coloors.greenLight,
-    photoIconBgColor: Color(0xFF0FF2F3),
+    photoIconBgColor: Color(0xFFF1F1F1),
     photoIconColor: Color(0xFF9DAAB3),
     profilePageBg: Color(0xFFF7F8FA),
+    chatTextFieldBg: Colors.white,
   );
 
   static const darkMode = CustomThemeExtension(
@@ -52,6 +55,7 @@ class CustomThemeExtension extends ThemeExtension<CustomThemeExtension> {
     photoIconBgColor: Color(0xFF283339),
     photoIconColor: Color(0xFF61717B),
     profilePageBg: Color(0xFF0B141A),
+    chatTextFieldBg: Coloors.greyBackground,
   );
 
   @override
@@ -65,6 +69,7 @@ class CustomThemeExtension extends ThemeExtension<CustomThemeExtension> {
     Color? photoIconBgColor,
     Color? photoIconColor,
     Color? profilePageBg,
+    Color? chatTextFieldBg,
   }) {
     return CustomThemeExtension(
       circleImageColor: circleImageColor ?? this.circleImageColor,
@@ -76,6 +81,7 @@ class CustomThemeExtension extends ThemeExtension<CustomThemeExtension> {
       photoIconBgColor: photoIconBgColor ?? this.photoIconBgColor,
       photoIconColor: photoIconColor ?? this.photoIconColor,
       profilePageBg: profilePageBg ?? this.profilePageBg,
+      chatTextFieldBg: chatTextFieldBg ?? this.chatTextFieldBg,
     );
   }
 
@@ -95,6 +101,7 @@ class CustomThemeExtension extends ThemeExtension<CustomThemeExtension> {
       photoIconBgColor: Color.lerp(photoIconBgColor, other.photoIconBgColor, t),
       photoIconColor: Color.lerp(photoIconColor, other.photoIconColor, t),
       profilePageBg: Color.lerp(profilePageBg, other.profilePageBg, t),
+      chatTextFieldBg: Color.lerp(chatTextFieldBg, other.chatTextFieldBg, t),
     );
   }
 }
