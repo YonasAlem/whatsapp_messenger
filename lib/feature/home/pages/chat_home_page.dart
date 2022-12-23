@@ -18,7 +18,7 @@ class ChatHomePage extends ConsumerWidget {
         stream: ref.watch(chatControllerProvider).getAllLastMessageList(),
         builder: (_, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(
+            return const Center(
               child: CircularProgressIndicator(
                 color: Coloors.greenDark,
               ),

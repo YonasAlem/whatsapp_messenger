@@ -1,7 +1,4 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/src/widgets/container.dart';
-import 'package:flutter/src/widgets/framework.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:whatsapp_messenger/common/extension/custom_theme_extension.dart';
 import 'package:whatsapp_messenger/common/utils/coloors.dart';
@@ -56,7 +53,6 @@ class _ChatTextFieldState extends ConsumerState<ChatTextField> {
               controller: messageController,
               maxLines: 4,
               minLines: 1,
-              autofocus: true,
               onChanged: (value) {
                 value.isEmpty
                     ? setState(() => isMessageIconEnabled = false)
@@ -80,6 +76,7 @@ class _ChatTextFieldState extends ConsumerState<ChatTextField> {
                   child: CustomIconButton(
                     onPressed: () {},
                     icon: Icons.emoji_emotions_outlined,
+                    iconColor: Theme.of(context).listTileTheme.iconColor,
                   ),
                 ),
                 suffixIcon: Row(
@@ -90,11 +87,13 @@ class _ChatTextFieldState extends ConsumerState<ChatTextField> {
                       child: CustomIconButton(
                         onPressed: () {},
                         icon: Icons.attach_file,
+                        iconColor: Theme.of(context).listTileTheme.iconColor,
                       ),
                     ),
                     CustomIconButton(
                       onPressed: () {},
                       icon: Icons.camera_alt_outlined,
+                      iconColor: Theme.of(context).listTileTheme.iconColor,
                     ),
                   ],
                 ),

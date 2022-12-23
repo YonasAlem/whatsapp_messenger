@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:whatsapp_messenger/common/models/last_message_model.dart';
+import 'package:whatsapp_messenger/common/models/message_model.dart';
 import 'package:whatsapp_messenger/feature/auth/controller/auth_controller.dart';
 import 'package:whatsapp_messenger/feature/chat/repository/chat_repository.dart';
 
@@ -17,6 +18,10 @@ class ChatController {
   final ProviderRef ref;
 
   ChatController({required this.chatRepository, required this.ref});
+
+  Stream<List<MessageModel>> getAllOneToOneMessage(String receiverId) {
+    return chatRepository.getAllOneToOneMessage(receiverId);
+  }
 
   Stream<List<LastMessageModel>> getAllLastMessageList() {
     return chatRepository.getAllLastMessageList();
