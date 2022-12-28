@@ -1,9 +1,12 @@
+import 'dart:math';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:custom_clippers/custom_clippers.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:whatsapp_messenger/common/extension/custom_theme_extension.dart';
 import 'package:whatsapp_messenger/common/models/user_model.dart';
 import 'package:whatsapp_messenger/common/routes/routes.dart';
@@ -11,13 +14,18 @@ import 'package:whatsapp_messenger/common/widgets/custom_icon_button.dart';
 import 'package:whatsapp_messenger/feature/auth/controller/auth_controller.dart';
 import 'package:whatsapp_messenger/feature/chat/controller/chat_controller.dart';
 import 'package:whatsapp_messenger/feature/chat/widgets/chat_text_field.dart';
+import 'package:whatsapp_messenger/feature/chat/widgets/message_card.dart';
+import 'package:whatsapp_messenger/feature/chat/widgets/yellow_card.dart';
 
 import '../../../common/helper/last_seen_message.dart';
 
+final pageStorageBucket = PageStorageBucket();
+
 class ChatPage extends ConsumerWidget {
-  const ChatPage({super.key, required this.user});
+  ChatPage({super.key, required this.user});
 
   final UserModel user;
+  final ScrollController scrollController = ScrollController();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -123,146 +131,136 @@ class ChatPage extends ConsumerWidget {
             fit: BoxFit.cover,
             color: context.theme.chatPageDoodleColor,
           ),
-          Column(
-            children: [
-              Expanded(
-                child: StreamBuilder(
-                  stream: ref
-                      .watch(chatControllerProvider)
-                      .getAllOneToOneMessage(user.uid),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState != ConnectionState.active) {
-                      return const Center(
-                        child: CircularProgressIndicator(),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 60),
+            child: StreamBuilder(
+              stream: ref
+                  .watch(chatControllerProvider)
+                  .getAllOneToOneMessage(user.uid),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState != ConnectionState.active) {
+                  return ListView.builder(
+                    itemCount: 15,
+                    itemBuilder: (_, index) {
+                      final random = Random().nextInt(14);
+                      return Container(
+                        alignment: random.isEven
+                            ? Alignment.centerRight
+                            : Alignment.centerLeft,
+                        margin: EdgeInsets.only(
+                          top: 5,
+                          bottom: 5,
+                          left: random.isEven ? 150 : 15,
+                          right: random.isEven ? 15 : 150,
+                        ),
+                        child: ClipPath(
+                          clipper: UpperNipMessageClipperTwo(
+                            random.isEven
+                                ? MessageType.send
+                                : MessageType.receive,
+                            nipWidth: 8,
+                            nipHeight: 10,
+                            bubbleRadius: 12,
+                          ),
+                          child: Shimmer.fromColors(
+                            baseColor: random.isEven
+                                ? context.theme.greyColor!.withOpacity(.3)
+                                : context.theme.greyColor!.withOpacity(.2),
+                            highlightColor: random.isEven
+                                ? context.theme.greyColor!.withOpacity(.4)
+                                : context.theme.greyColor!.withOpacity(.3),
+                            child: Container(
+                              height: 40,
+                              width: 170 +
+                                  double.parse(
+                                    (random * 2).toString(),
+                                  ),
+                              color: Colors.red,
+                            ),
+                          ),
+                        ),
                       );
-                    }
+                    },
+                  );
+                }
 
-                    return ListView.builder(
-                      itemCount: snapshot.data!.length,
-                      shrinkWrap: true,
-                      itemBuilder: (_, index) {
-                        final message = snapshot.data![index];
-                        final isSender = message.senderId ==
-                            FirebaseAuth.instance.currentUser!.uid;
+                return PageStorage(
+                  bucket: pageStorageBucket,
+                  child: ListView.builder(
+                    key: const PageStorageKey('chat_page_list'),
+                    itemCount: snapshot.data!.length,
+                    shrinkWrap: true,
+                    controller: scrollController,
+                    itemBuilder: (_, index) {
+                      final message = snapshot.data![index];
+                      final isSender = message.senderId ==
+                          FirebaseAuth.instance.currentUser!.uid;
 
-                        final haveNip = (index == 0) ||
-                            (index == snapshot.data!.length - 1 &&
-                                message.senderId !=
-                                    snapshot.data![index - 1].senderId) ||
-                            (message.senderId !=
-                                    snapshot.data![index - 1].senderId &&
-                                message.senderId ==
-                                    snapshot.data![index + 1].senderId) ||
-                            (message.senderId !=
-                                    snapshot.data![index - 1].senderId &&
-                                message.senderId !=
-                                    snapshot.data![index + 1].senderId);
+                      final haveNip = (index == 0) ||
+                          (index == snapshot.data!.length - 1 &&
+                              message.senderId !=
+                                  snapshot.data![index - 1].senderId) ||
+                          (message.senderId !=
+                                  snapshot.data![index - 1].senderId &&
+                              message.senderId ==
+                                  snapshot.data![index + 1].senderId) ||
+                          (message.senderId !=
+                                  snapshot.data![index - 1].senderId &&
+                              message.senderId !=
+                                  snapshot.data![index + 1].senderId);
 
-                        return Column(
-                          children: [
-                            if (index == 0)
-                              Container(
-                                margin: const EdgeInsets.symmetric(
-                                  vertical: 10,
-                                  horizontal: 30,
+                      return Column(
+                        children: [
+                          if (index == 0) const YellowCard(),
+                          if ((index == 0) ||
+                              (index == snapshot.data!.length - 1 &&
+                                  message.timeSent.day >
+                                      snapshot.data![index - 1].timeSent.day) ||
+                              (message.timeSent.day >
+                                      snapshot.data![index - 1].timeSent.day &&
+                                  message.timeSent.day <=
+                                      snapshot.data![index + 1].timeSent.day))
+                            Align(
+                              alignment: Alignment.center,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 5,
                                 ),
-                                padding: const EdgeInsets.all(10),
+                                margin:
+                                    const EdgeInsets.symmetric(vertical: 10),
                                 decoration: BoxDecoration(
-                                  color: context.theme.yellowCardBgColor,
+                                  color: context.theme.receiverChatCardBg,
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Text(
-                                  'Message and calls are end-to-end encrypted. No one outside of this chat, not even WhatsApp, can read or listen to them. Tap to learn more.',
-                                  textAlign: TextAlign.center,
+                                  DateFormat.yMMMd().format(message.timeSent),
                                   style: TextStyle(
-                                    fontSize: 13,
-                                    color: context.theme.yellowCardTextColor,
-                                  ),
-                                ),
-                              ),
-                            Container(
-                              alignment: isSender
-                                  ? Alignment.centerRight
-                                  : Alignment.centerLeft,
-                              margin: EdgeInsets.only(
-                                top: 4,
-                                bottom: 4,
-                                left: isSender
-                                    ? 80
-                                    : haveNip
-                                        ? 10
-                                        : 15,
-                                right: isSender
-                                    ? haveNip
-                                        ? 10
-                                        : 15
-                                    : 80,
-                              ),
-                              child: ClipPath(
-                                clipper: haveNip
-                                    ? UpperNipMessageClipperTwo(
-                                        isSender
-                                            ? MessageType.send
-                                            : MessageType.receive,
-                                        nipWidth: 8,
-                                        nipHeight: 10,
-                                        bubbleRadius: haveNip ? 12 : 0,
-                                      )
-                                    : null,
-                                child: Container(
-                                  padding: EdgeInsets.only(
-                                    top: 8,
-                                    bottom: 8,
-                                    left: isSender ? 10 : 15,
-                                    right: isSender ? 15 : 10,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: isSender
-                                        ? context.theme.senderChatCardBg
-                                        : context.theme.receiverChatCardBg,
-                                    borderRadius: haveNip
-                                        ? null
-                                        : BorderRadius.circular(12),
-                                    boxShadow: const [
-                                      BoxShadow(color: Colors.black38),
-                                    ],
-                                  ),
-                                  child: Stack(
-                                    children: [
-                                      Padding(
-                                        padding:
-                                            const EdgeInsets.only(bottom: 5),
-                                        child: Text(
-                                          "${message.textMessage}         ",
-                                          style: const TextStyle(fontSize: 16),
-                                        ),
-                                      ),
-                                      Positioned(
-                                        bottom: 0,
-                                        right: 0,
-                                        child: Text(
-                                          DateFormat.Hm()
-                                              .format(message.timeSent),
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            color: context.theme.greyColor,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
+                                    color: context.theme.greyColor,
+                                    fontSize: 12,
                                   ),
                                 ),
                               ),
                             ),
-                          ],
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
-              ChatTextField(receiverId: user.uid),
-            ],
+                          MessageCard(
+                            isSender: isSender,
+                            haveNip: haveNip,
+                            message: message,
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                );
+              },
+            ),
+          ),
+          Container(
+            alignment: const Alignment(0, 1),
+            child: ChatTextField(
+              receiverId: user.uid,
+              scrollController: scrollController,
+            ),
           ),
         ],
       ),
