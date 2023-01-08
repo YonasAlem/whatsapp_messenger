@@ -8,6 +8,7 @@ import 'package:whatsapp_messenger/common/helper/show_alert_dialog.dart';
 import 'package:whatsapp_messenger/common/models/last_message_model.dart';
 import 'package:whatsapp_messenger/common/models/message_model.dart';
 import 'package:whatsapp_messenger/common/models/user_model.dart';
+import 'package:whatsapp_messenger/common/repository/firebase_storage_repository.dart';
 
 final chatRepositoryProvider = Provider((ref) {
   return ChatRepository(
@@ -21,6 +22,67 @@ class ChatRepository {
   final FirebaseAuth auth;
 
   ChatRepository({required this.firestore, required this.auth});
+
+  void sendFileMessage({
+    required var file,
+    required BuildContext context,
+    required String receiverId,
+    required UserModel senderData,
+    required Ref ref,
+    required MessageType messageType,
+  }) async {
+    try {
+      final timeSent = DateTime.now();
+      final messageId = const Uuid().v1();
+
+      final imageUrl = await ref.read(firebaseStorageRepositoryProvider).storeFileToFirebase(
+            'chats/${messageType.type}/${senderData.uid}/$receiverId/$messageId',
+            file,
+          );
+      final userMap = await firestore.collection('users').doc(receiverId).get();
+      final receverUserData = UserModel.fromMap(userMap.data()!);
+
+      String lastMessage;
+
+      switch (messageType) {
+        case MessageType.image:
+          lastMessage = '📸 Photo message';
+          break;
+        case MessageType.audio:
+          lastMessage = '📸 Voice message';
+          break;
+        case MessageType.video:
+          lastMessage = '📸 Video message';
+          break;
+        case MessageType.gif:
+          lastMessage = '📸 GIF message';
+          break;
+        default:
+          lastMessage = '📦 GIF message';
+          break;
+      }
+
+      saveToMessageCollection(
+        receiverId: receiverId,
+        textMessage: imageUrl,
+        timeSent: timeSent,
+        textMessageId: messageId,
+        senderUsername: senderData.username,
+        receiverUsername: receverUserData.username,
+        messageType: messageType,
+      );
+
+      saveAsLastMessage(
+        senderUserData: senderData,
+        receiverUserData: receverUserData,
+        lastMessage: lastMessage,
+        timeSent: timeSent,
+        receiverId: receiverId,
+      );
+    } catch (e) {
+      showAlertDialog(context: context, message: e.toString());
+    }
+  }
 
   Stream<List<MessageModel>> getAllOneToOneMessage(String receiverId) {
     return firestore
@@ -50,10 +112,7 @@ class ChatRepository {
       List<LastMessageModel> contacts = [];
       for (var document in event.docs) {
         final lastMessage = LastMessageModel.fromMap(document.data());
-        final userData = await firestore
-            .collection('users')
-            .doc(lastMessage.contactId)
-            .get();
+        final userData = await firestore.collection('users').doc(lastMessage.contactId).get();
         final user = UserModel.fromMap(userData.data()!);
         contacts.add(
           LastMessageModel(
@@ -77,8 +136,7 @@ class ChatRepository {
   }) async {
     try {
       final timeSent = DateTime.now();
-      final receiverDataMap =
-          await firestore.collection('users').doc(receiverId).get();
+      final receiverDataMap = await firestore.collection('users').doc(receiverId).get();
       final receiverData = UserModel.fromMap(receiverDataMap.data()!);
       final textMessageId = const Uuid().v1();
 
@@ -117,7 +175,7 @@ class ChatRepository {
       senderId: auth.currentUser!.uid,
       receiverId: receiverId,
       textMessage: textMessage,
-      type: MessageType.text,
+      type: messageType,
       timeSent: timeSent,
       messageId: textMessageId,
       isSeen: false,

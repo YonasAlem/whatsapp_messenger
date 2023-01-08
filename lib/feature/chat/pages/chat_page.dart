@@ -5,7 +5,6 @@ import 'package:custom_clippers/custom_clippers.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:whatsapp_messenger/common/extension/custom_theme_extension.dart';
 import 'package:whatsapp_messenger/common/models/user_model.dart';
@@ -15,6 +14,7 @@ import 'package:whatsapp_messenger/feature/auth/controller/auth_controller.dart'
 import 'package:whatsapp_messenger/feature/chat/controller/chat_controller.dart';
 import 'package:whatsapp_messenger/feature/chat/widgets/chat_text_field.dart';
 import 'package:whatsapp_messenger/feature/chat/widgets/message_card.dart';
+import 'package:whatsapp_messenger/feature/chat/widgets/show_date_card.dart';
 import 'package:whatsapp_messenger/feature/chat/widgets/yellow_card.dart';
 
 import '../../../common/helper/last_seen_message.dart';
@@ -77,22 +77,17 @@ class ChatPage extends ConsumerWidget {
                 ),
                 const SizedBox(height: 3),
                 StreamBuilder(
-                  stream: ref
-                      .read(authControllerProvider)
-                      .getUserPresenceStatus(uid: user.uid),
+                  stream: ref.read(authControllerProvider).getUserPresenceStatus(uid: user.uid),
                   builder: (_, snapshot) {
                     if (snapshot.connectionState != ConnectionState.active) {
                       return const SizedBox();
                     }
 
                     final singleUserModel = snapshot.data!;
-                    final lastMessage =
-                        lastSeenMessage(singleUserModel.lastSeen);
+                    final lastMessage = lastSeenMessage(singleUserModel.lastSeen);
 
                     return Text(
-                      singleUserModel.active
-                          ? 'online'
-                          : "last seen $lastMessage ago",
+                      singleUserModel.active ? 'online' : "last seen $lastMessage ago",
                       style: const TextStyle(
                         fontSize: 12,
                         color: Colors.white,
@@ -124,6 +119,7 @@ class ChatPage extends ConsumerWidget {
       ),
       body: Stack(
         children: [
+          // chat background image
           Image(
             height: double.maxFinite,
             width: double.maxFinite,
@@ -131,12 +127,11 @@ class ChatPage extends ConsumerWidget {
             fit: BoxFit.cover,
             color: context.theme.chatPageDoodleColor,
           ),
+          // Stream of Chat
           Padding(
             padding: const EdgeInsets.only(bottom: 60),
             child: StreamBuilder(
-              stream: ref
-                  .watch(chatControllerProvider)
-                  .getAllOneToOneMessage(user.uid),
+              stream: ref.watch(chatControllerProvider).getAllOneToOneMessage(user.uid),
               builder: (context, snapshot) {
                 if (snapshot.connectionState != ConnectionState.active) {
                   return ListView.builder(
@@ -144,9 +139,7 @@ class ChatPage extends ConsumerWidget {
                     itemBuilder: (_, index) {
                       final random = Random().nextInt(14);
                       return Container(
-                        alignment: random.isEven
-                            ? Alignment.centerRight
-                            : Alignment.centerLeft,
+                        alignment: random.isEven ? Alignment.centerRight : Alignment.centerLeft,
                         margin: EdgeInsets.only(
                           top: 5,
                           bottom: 5,
@@ -155,9 +148,7 @@ class ChatPage extends ConsumerWidget {
                         ),
                         child: ClipPath(
                           clipper: UpperNipMessageClipperTwo(
-                            random.isEven
-                                ? MessageType.send
-                                : MessageType.receive,
+                            random.isEven ? MessageType.send : MessageType.receive,
                             nipWidth: 8,
                             nipHeight: 10,
                             bubbleRadius: 12,
@@ -193,55 +184,25 @@ class ChatPage extends ConsumerWidget {
                     controller: scrollController,
                     itemBuilder: (_, index) {
                       final message = snapshot.data![index];
-                      final isSender = message.senderId ==
-                          FirebaseAuth.instance.currentUser!.uid;
+                      final isSender = message.senderId == FirebaseAuth.instance.currentUser!.uid;
 
                       final haveNip = (index == 0) ||
                           (index == snapshot.data!.length - 1 &&
-                              message.senderId !=
-                                  snapshot.data![index - 1].senderId) ||
-                          (message.senderId !=
-                                  snapshot.data![index - 1].senderId &&
-                              message.senderId ==
-                                  snapshot.data![index + 1].senderId) ||
-                          (message.senderId !=
-                                  snapshot.data![index - 1].senderId &&
-                              message.senderId !=
-                                  snapshot.data![index + 1].senderId);
+                              message.senderId != snapshot.data![index - 1].senderId) ||
+                          (message.senderId != snapshot.data![index - 1].senderId &&
+                              message.senderId == snapshot.data![index + 1].senderId) ||
+                          (message.senderId != snapshot.data![index - 1].senderId &&
+                              message.senderId != snapshot.data![index + 1].senderId);
+                      final isShowDateCard = (index == 0) ||
+                          ((index == snapshot.data!.length - 1) &&
+                              (message.timeSent.day > snapshot.data![index - 1].timeSent.day)) ||
+                          (message.timeSent.day > snapshot.data![index - 1].timeSent.day &&
+                              message.timeSent.day <= snapshot.data![index + 1].timeSent.day);
 
                       return Column(
                         children: [
                           if (index == 0) const YellowCard(),
-                          if ((index == 0) ||
-                              (index == snapshot.data!.length - 1 &&
-                                  message.timeSent.day >
-                                      snapshot.data![index - 1].timeSent.day) ||
-                              (message.timeSent.day >
-                                      snapshot.data![index - 1].timeSent.day &&
-                                  message.timeSent.day <=
-                                      snapshot.data![index + 1].timeSent.day))
-                            Align(
-                              alignment: Alignment.center,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 5,
-                                ),
-                                margin:
-                                    const EdgeInsets.symmetric(vertical: 10),
-                                decoration: BoxDecoration(
-                                  color: context.theme.receiverChatCardBg,
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Text(
-                                  DateFormat.yMMMd().format(message.timeSent),
-                                  style: TextStyle(
-                                    color: context.theme.greyColor,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ),
-                            ),
+                          if (isShowDateCard) ShowDateCard(date: message.timeSent),
                           MessageCard(
                             isSender: isSender,
                             haveNip: haveNip,
